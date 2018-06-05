@@ -1,0 +1,8 @@
+version: '3.4'
+
+services:
+  nscrapywebconsole:
+    image: ${DOCKER_REGISTRY}nscrapywebconsole
+    build:
+      context: .
+      dockerfile: NScrapyWebConsole/Dockerfile
