@@ -1,9 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.WebSockets;
+using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -41,6 +45,36 @@ namespace NScrapyWebConsole
                 ReceiveBufferSize = 4096
             };
             app.UseWebSockets();
+            app.Use(async (context, next) =>
+            {
+                if (context.Request.Path == "/ws")
+                {
+                    if (context.WebSockets.IsWebSocketRequest)
+                    {
+                        WebSocket ws = await context.WebSockets.AcceptWebSocketAsync();
+                    }
+                    else
+                    {
+                        context.Response.StatusCode = 400;
+                    }
+                }
+                else
+                {
+                    await next();
+                }
+                
+            });
+        }
+
+        public async Task<string> GetNodeStatus(HttpContext context,WebSocket ws)
+        {
+            while(true)
+            {
+                var status =await Redis.RedisManager.Current.GetNodeStatus();
+                var arraySegment = new ArraySegment<byte>(Encoding.UTF8.GetBytes(status));
+                await ws.SendAsync(arraySegment, WebSocketMessageType.Text, true, CancellationToken.None);
+                Thread.Sleep((int)TimeSpan.TicksPerSecond);
+            }
         }
     }
 }
