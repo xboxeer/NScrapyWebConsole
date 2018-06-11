@@ -36,34 +36,41 @@ namespace NScrapyWebConsole
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
-            }
-
-            app.UseMvc();
+            }            
             var wsOption = new WebSocketOptions()
             {
                 KeepAliveInterval = TimeSpan.FromSeconds(120),
                 ReceiveBufferSize = 4096
             };
+            app.UseMvc();
             app.UseWebSockets();
-            app.Use(async (context, next) =>
-            {
-                if (context.Request.Path == "/ws")
-                {
-                    if (context.WebSockets.IsWebSocketRequest)
-                    {
-                        WebSocket ws = await context.WebSockets.AcceptWebSocketAsync();
-                    }
-                    else
-                    {
-                        context.Response.StatusCode = 400;
-                    }
-                }
-                else
-                {
-                    await next();
-                }
+            WebSocketMiddleware.MessageProducers.Add("/getNodeStatus", async context =>
+             {
+                 Thread.Sleep(1000);
+                 return await Redis.RedisManager.Current.GetNodeStatus();
+             });
+            app.UseMiddleware<WebSocketMiddleware>();
+            //app.Use(async (context, next) =>
+            //{
+            //    if (context.Request.Path == "/ws")
+            //    {
+            //        if (context.WebSockets.IsWebSocketRequest)
+            //        {
+            //            WebSocket ws = await context.WebSockets.AcceptWebSocketAsync();
+            //            await GetNodeStatus(context, ws);
+            //        }
+            //        else
+            //        {
+            //            context.Response.StatusCode = 400;
+            //        }
+            //    }
+            //    else
+            //    {
+            //        await next();
+            //    }
                 
-            });
+            //});
+            
         }
 
         public async Task<string> GetNodeStatus(HttpContext context,WebSocket ws)
@@ -73,7 +80,7 @@ namespace NScrapyWebConsole
                 var status =await Redis.RedisManager.Current.GetNodeStatus();
                 var arraySegment = new ArraySegment<byte>(Encoding.UTF8.GetBytes(status));
                 await ws.SendAsync(arraySegment, WebSocketMessageType.Text, true, CancellationToken.None);
-                Thread.Sleep((int)TimeSpan.TicksPerSecond);
+                Thread.Sleep(1000);
             }
         }
     }

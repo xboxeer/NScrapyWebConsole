@@ -33,8 +33,8 @@ namespace NScrapyWebConsole.Redis
 
         public async Task<string> GetNodeStatus()
         {
-            //Lets first return some mock data here
-            return "{DownloaderCapbility:64,RunningDownloaders:5}";
+            //Lets first return some mock data here            
+            return $"{{Name:{Guid.NewGuid().ToString()},DownloaderCapbility:64,RunningDownloaders:5}}";
         }
         /// <summary>
         /// Specify the Redis endpoint address
