@@ -25,31 +25,35 @@ namespace NScrapyWebConsole
             if (!context.WebSockets.IsWebSocketRequest)
             {
                 await this._next(context);                
-            }             
-            WebSocket ws = await context.WebSockets.AcceptWebSocketAsync();
-            while(true)
+            }
+            else
             {
-                
-                if(context.RequestAborted.IsCancellationRequested)
+                WebSocket ws = await context.WebSockets.AcceptWebSocketAsync();
+                while (true)
                 {
-                    break;
+
+                    if (context.RequestAborted.IsCancellationRequested)
+                    {
+                        break;
+                    }
+                    if (ws.State == WebSocketState.Closed)
+                    {
+                        break;
+                    }
+                    //Let's have a simple WebSocket Route approach to distribute request to different MessageProducer
+                    if (MessageProducers.ContainsKey(context.Request.Path))
+                    {
+                        var message = await MessageProducers[context.Request.Path](context);
+                        await SendMessageAsync(ws, message);
+                    }
+                    else
+                    {
+                        context.Response.StatusCode = StatusCodes.Status400BadRequest;
+                    }
                 }
-                if(ws.State==WebSocketState.Closed)
-                {
-                    break;
-                }
-                //Let's have a simple WebSocket Route approach to distribute request to different MessageProducer
-                if (MessageProducers.ContainsKey(context.Request.Path))
-                {
-                    var message = await MessageProducers[context.Request.Path](context);
-                    await SendMessageAsync(ws, message);
-                }
-                else
-                {
-                    context.Response.StatusCode = StatusCodes.Status400BadRequest;
-                }
-            }         
-            await ws.CloseAsync(WebSocketCloseStatus.Empty, string.Empty, CancellationToken.None);
+                await ws.CloseAsync(WebSocketCloseStatus.Empty, string.Empty, CancellationToken.None);
+            }
+            
         }
 
         private async Task SendMessageAsync(WebSocket ws,string message,CancellationToken ct=default(CancellationToken))
