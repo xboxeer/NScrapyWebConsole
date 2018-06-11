@@ -29,7 +29,7 @@ namespace NScrapyWebConsole
             WebSocket ws = await context.WebSockets.AcceptWebSocketAsync();
             while(true)
             {
-                //Let's have a simple WebSocket Route approach to distribute request to different MessageProducer
+                
                 if(context.RequestAborted.IsCancellationRequested)
                 {
                     break;
@@ -38,7 +38,8 @@ namespace NScrapyWebConsole
                 {
                     break;
                 }
-                if(MessageProducers.ContainsKey(context.Request.Path))
+                //Let's have a simple WebSocket Route approach to distribute request to different MessageProducer
+                if (MessageProducers.ContainsKey(context.Request.Path))
                 {
                     var message = await MessageProducers[context.Request.Path](context);
                     await SendMessageAsync(ws, message);
@@ -47,7 +48,7 @@ namespace NScrapyWebConsole
                 {
                     context.Response.StatusCode = StatusCodes.Status400BadRequest;
                 }
-            }
+            }         
             await ws.CloseAsync(WebSocketCloseStatus.Empty, string.Empty, CancellationToken.None);
         }
 
